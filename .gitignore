@@ -31,3 +31,10 @@ id_ed25519*
 *.db
 .beads-credential-key
 .beads/proxieddb/
+
+# Gas City
+.beads/*
+!.beads/identity.toml
+# Symlink farm into this machine's ~/.gc cache — absolute paths, useless to
+# anyone else and not something a public repo should carry.
+.claude/skills/
