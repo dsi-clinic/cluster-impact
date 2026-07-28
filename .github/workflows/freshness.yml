@@ -1,0 +1,46 @@
+name: Data freshness
+
+# The collector runs on a cluster node that cannot reliably send mail to
+# @uchicago.edu (Proofpoint blocks the range). Rather than fight that, the
+# collector writes a heartbeat into data/health.json and this job watches it
+# from the outside — a failure here notifies through GitHub.
+
+on:
+  schedule:
+    - cron: "0 14 * * *" # 14:00 UTC, ~9am Chicago, well after the nightly run
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check collector heartbeat
+        run: |
+          if [ ! -f data/health.json ]; then
+            echo "::warning::data/health.json does not exist yet — the collector has never run."
+            exit 0
+          fi
+
+          last_run=$(python3 -c "import json;print(json.load(open('data/health.json'))['last_run'])")
+          echo "Last collector run: $last_run"
+
+          age_hours=$(python3 - "$last_run" <<'PY'
+          import sys
+          from datetime import datetime, timezone
+          stamp = datetime.fromisoformat(sys.argv[1])
+          if stamp.tzinfo is None:
+              stamp = stamp.replace(tzinfo=timezone.utc)
+          print(int((datetime.now(timezone.utc) - stamp).total_seconds() // 3600))
+          PY
+          )
+
+          echo "Age: ${age_hours}h"
+          if [ "$age_hours" -gt 36 ]; then
+            echo "::error::Collector data is ${age_hours}h old (threshold 36h). Check the timer on the collector node."
+            exit 1
+          fi

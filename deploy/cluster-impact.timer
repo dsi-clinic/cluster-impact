@@ -1,0 +1,18 @@
+[Unit]
+Description=Nightly DSI cluster impact collection
+Documentation=https://github.com/dsi-clinic/cluster-impact
+
+[Timer]
+# 03:30 local. Late enough that the previous day is settled, early enough that
+# the freshness check at 14:00 UTC has something fresh to find.
+OnCalendar=*-*-* 03:30:00
+
+# Spread load if this is ever deployed on more than one host.
+RandomizedDelaySec=15m
+
+# Catch up a run missed while the host was down, rather than silently
+# skipping a day.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

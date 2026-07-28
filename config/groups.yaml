@@ -1,0 +1,50 @@
+# Slurm account -> public display identity.
+#
+# THIS FILE IS AN ALLOWLIST AND IT FAILS CLOSED.
+#
+# An account that does not appear here is published as "Other" — its usage is
+# still counted in every total, but it is never named. Adding a lab here is a
+# deliberate, reviewable act. That is the point: a new account cannot leak a
+# PI's name onto a public website just by running a job.
+#
+# A named group is ALSO subject to the k-anonymity floor in sources.yaml
+# (default: 3 distinct users). A one-person "lab" is a person, and naming it
+# names them, so it collapses into "Other" regardless of what is written here.
+#
+# type: lab | course | clinic | core | other
+#   lab     research group under a PI
+#   course  teaching allocation
+#   clinic  DSI Clinic project team
+#   core    shared/institutional service account
+
+# TODO(bennett): populate from `sacctmgr show account -P`. Every account you
+# leave out still counts toward totals but shows up unnamed, so an empty file
+# is a safe (if boring) starting state.
+
+accounts: {}
+  # Example of the intended shape — delete once real entries land:
+  #
+  # kolar-lab:
+  #   display_name: "Kolar Lab"
+  #   department: "Statistics"
+  #   division: "Physical Sciences Division"
+  #   type: lab
+  #
+  # dsi-clinic:
+  #   display_name: "DSI Clinic"
+  #   department: "Data Science Institute"
+  #   division: "Data Science Institute"
+  #   type: clinic
+  #
+  # cmsc-25025:
+  #   display_name: "CMSC 25025 — Machine Learning"
+  #   department: "Computer Science"
+  #   division: "Physical Sciences Division"
+  #   type: course
+
+# Label used for everything not named above.
+fallback:
+  display_name: "Other"
+  department: "Other"
+  division: "Other"
+  type: other

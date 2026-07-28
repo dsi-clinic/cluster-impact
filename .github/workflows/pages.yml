@@ -1,0 +1,76 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # The deploy gate. This repository is public and the collector pushes to it
+  # unattended, so nothing reaches the site until the published bytes have
+  # been re-read and checked. `build` depends on this job, so a failure here
+  # stops the deploy rather than merely annotating it.
+  privacy-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install collector dependencies
+        run: pip install --quiet PyYAML
+
+      - name: Verify published data
+        run: |
+          if [ ! -d data ] || [ -z "$(find data -name '*.json' -print -quit)" ]; then
+            echo "No published data yet — nothing to verify."
+            exit 0
+          fi
+          python -m collector.cli verify data \
+            --summary _data/summary.json \
+            --require-live
+
+  build:
+    runs-on: ubuntu-latest
+    needs: privacy-gate
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.1"
+          bundler-cache: true
+
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v4
+
+      - name: Build with Jekyll
+        run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
+        env:
+          JEKYLL_ENV: production
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

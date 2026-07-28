@@ -1,0 +1,61 @@
+# Test-only cluster config. Small, self-consistent, and matching sinfo.txt.
+gpu_models:
+  a40:
+    display: "NVIDIA A40"
+    memory_gb: 48
+    tflops_fp16_dense: 149.7
+    tflops_fp8_dense: null
+    tdp_watts: 300
+  a100:
+    display: "NVIDIA A100 80GB"
+    memory_gb: 80
+    tflops_fp16_dense: 312.0
+    tflops_fp8_dense: null
+    tdp_watts: 400
+  l40s:
+    display: "NVIDIA L40S"
+    memory_gb: 48
+    tflops_fp16_dense: 362.05
+    tflops_fp8_dense: 733.0
+    tdp_watts: 350
+  h100:
+    display: "NVIDIA H100"
+    memory_gb: 80
+    tflops_fp16_dense: 989.4
+    tflops_fp8_dense: 1979.0
+    tdp_watts: 700
+  h200:
+    display: "NVIDIA H200"
+    memory_gb: 141
+    tflops_fp16_dense: 989.4
+    tflops_fp8_dense: 1979.0
+    tdp_watts: 700
+
+capacity_timeline:
+  - effective: "2026-01-01"
+    note: "test baseline"
+    gpus:
+      a100: 8
+      a40: 8
+      l40s: 16
+      h100: 16
+      h200: 8
+
+cloud_pricing:
+  currency: USD
+  basis: "on-demand"
+  source: "https://example.invalid/pricing"
+  asof: "2026-07-01"
+  usd_per_gpu_hour:
+    a40: 1.10
+    a100: 2.20
+    l40s: 1.40
+    h100: 3.20
+    h200: 4.00
+
+filesystems:
+  - name: "/net/projects"
+    display: "Projects"
+    host: "cluster-storage2"
+    dataset: "tank/projects"
+    kind: "persistent"

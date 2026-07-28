@@ -1,0 +1,21 @@
+<!-- start custom head snippets -->
+
+<!-- Umami Analytics.
+     TODO(bennett): register a NEW website id for cluster-impact rather than
+     reusing the policy site's — sharing one id merges the two sites' stats. -->
+<script defer src="https://analytics.ds.uchicago.edu/script.js" data-website-id="REPLACE-WITH-NEW-UMAMI-ID"></script>
+
+<link rel="apple-touch-icon" sizes="180x180" href="{{ '/assets/images/dsi-logo.webp' | relative_url }}">
+<link rel="icon" href="{{ '/assets/images/favicon.ico' | relative_url }}">
+<link rel="manifest" href="{{ '/assets/site.webmanifest' | relative_url }}">
+
+<!-- Charts. ECharts is vendored (Apache-2.0) rather than pulled from a CDN so
+     the dashboard still renders if jsDelivr is blocked or slow, and so no
+     visitor IP is handed to a third party just to draw a line chart. -->
+<script defer src="{{ '/assets/js/echarts.min.js' | relative_url }}"></script>
+<script>
+  window.IMPACT_BASEURL = {{ site.baseurl | default: '' | jsonify }};
+</script>
+<script defer src="{{ '/assets/js/impact.js' | relative_url }}"></script>
+
+<!-- end custom head snippets -->

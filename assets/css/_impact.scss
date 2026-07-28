@@ -1,0 +1,268 @@
+/* ===========================================================================
+   Dashboard styles: stat tiles, charts, tables, states.
+
+   Colour rules that matter for a public metrics site:
+   - The categorical series palette is NOT a maroon ramp. Maroon is the brand
+     chrome; using it for data too makes "which series is this" ambiguous.
+   - Every series colour is distinguishable in greyscale and survives the
+     common forms of colour-vision deficiency, because these charts end up in
+     printed decks and on projectors.
+   - "Allocated" is always the saturated colour and "idle/available" always
+     the muted one, on every chart, so the reader learns it once.
+   =========================================================================== */
+
+:root {
+  --ci-ink: #1f2124;
+  --ci-muted: #6a6f76;
+  --ci-line: #e3e5e8;
+  --ci-surface: #ffffff;
+  --ci-surface-alt: #f7f7f8;
+
+  /* Categorical series. Ordered by first use. */
+  --ci-s1: #2a5d9f; /* allocated / primary */
+  --ci-s2: #c8811a; /* secondary */
+  --ci-s3: #3f8a6e; /* tertiary */
+  --ci-s4: #8b5aa6; /* quaternary */
+  --ci-s5: #b04a4a; /* quinary */
+  --ci-s6: #4a7a8c;
+
+  /* Semantic */
+  --ci-idle: #c3c7cc;
+  --ci-down: #9aa0a6;
+  --ci-good: #3f8a6e;
+  --ci-warn: #c8811a;
+  --ci-bad: #b04a4a;
+}
+
+/* ---------------------------------------------------------------- tiles */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0 2rem;
+}
+
+.stat-tile {
+  background: var(--ci-surface);
+  border: 1px solid var(--ci-line);
+  border-top: 3px solid var(--uchicago-maroon);
+  border-radius: 4px;
+  padding: 1rem 1.1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.stat-tile__value {
+  font-family: "Crimson Text", Georgia, serif;
+  font-size: 2.1rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--ci-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-tile__unit {
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--ci-muted);
+  margin-left: 0.15rem;
+}
+
+.stat-tile__label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--uchicago-maroon);
+}
+
+.stat-tile__note {
+  font-size: 0.75rem;
+  color: var(--ci-muted);
+  line-height: 1.4;
+}
+
+.stat-tile--empty .stat-tile__value {
+  color: var(--ci-muted);
+  font-size: 1.4rem;
+}
+
+/* ---------------------------------------------------------------- charts */
+
+.chart-card {
+  background: var(--ci-surface);
+  border: 1px solid var(--ci-line);
+  border-radius: 4px;
+  padding: 1rem 1.1rem 0.6rem;
+  margin: 1.5rem 0;
+}
+
+.chart-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.chart-card__title {
+  font-family: "Crimson Text", Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--ci-ink);
+}
+
+.chart-card__sub {
+  font-size: 0.8rem;
+  color: var(--ci-muted);
+  margin: 0 0 0.5rem;
+  line-height: 1.45;
+}
+
+.chart {
+  width: 100%;
+  height: 340px;
+}
+
+.chart--tall { height: 440px; }
+.chart--short { height: 240px; }
+
+.chart__fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--ci-muted);
+  font-size: 0.85rem;
+  background: var(--ci-surface-alt);
+  border-radius: 3px;
+}
+
+/* --------------------------------------------------------------- states */
+
+.data-state {
+  border: 1px solid var(--ci-line);
+  border-left: 3px solid var(--ci-warn);
+  background: var(--ci-surface-alt);
+  border-radius: 3px;
+  padding: 0.9rem 1.1rem;
+  margin: 1.25rem 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.data-state--info { border-left-color: var(--ci-s1); }
+.data-state--ok { border-left-color: var(--ci-good); }
+
+.data-state__title {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 0.2rem;
+  color: var(--ci-ink);
+}
+
+.freshness {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--ci-muted);
+  margin: 0.25rem 0 1rem;
+}
+
+.freshness::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ci-good);
+}
+
+.freshness--stale::before { background: var(--ci-warn); }
+.freshness--unknown::before { background: var(--ci-down); }
+
+/* --------------------------------------------------------------- tables */
+
+.impact-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.impact-table th {
+  text-align: left;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--uchicago-maroon);
+  border-bottom: 2px solid var(--ci-line);
+  padding: 0.5rem 0.6rem;
+}
+
+.impact-table td {
+  border-bottom: 1px solid var(--ci-line);
+  padding: 0.5rem 0.6rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.impact-table td.num,
+.impact-table th.num { text-align: right; }
+
+.impact-table tbody tr:hover { background: var(--ci-surface-alt); }
+
+/* --------------------------------------------------------------- misc */
+
+.methodology-note {
+  font-size: 0.8rem;
+  color: var(--ci-muted);
+  border-left: 2px solid var(--ci-line);
+  padding-left: 0.8rem;
+  margin: 1rem 0;
+  line-height: 1.55;
+}
+
+.record-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.record-card {
+  border: 1px solid var(--ci-line);
+  border-radius: 4px;
+  padding: 1rem;
+  background: var(--ci-surface);
+}
+
+.record-card__value {
+  font-family: "Crimson Text", Georgia, serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--uchicago-maroon);
+  font-variant-numeric: tabular-nums;
+}
+
+.record-card__label { font-size: 0.85rem; color: var(--ci-ink); }
+.record-card__when { font-size: 0.75rem; color: var(--ci-muted); }
+
+/* Print: charts end up in slide decks and annual reports. */
+@media print {
+  .sidebar, .masthead, .page__footer, .back-to-top { display: none !important; }
+  .main--with-sidebar { margin-left: 0 !important; padding-top: 0 !important; }
+  .chart-card { break-inside: avoid; border-color: #bbb; }
+  .stat-tile { break-inside: avoid; }
+  body::after { display: none; }
+}
+
+@media (max-width: 700px) {
+  .stat-tile__value { font-size: 1.7rem; }
+  .chart { height: 280px; }
+}

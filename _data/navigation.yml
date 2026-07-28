@@ -1,0 +1,24 @@
+# Sidebar navigation, rendered by _includes/sidebar.html.
+# Adding a page means two edits: the markdown file and this file.
+
+main:
+  - title: "Overview"
+    url: "/"
+  - title: "Utilization"
+    url: "/utilization/"
+  - title: "Community"
+    url: "/community/"
+  - title: "Responsiveness"
+    url: "/responsiveness/"
+  - title: "Capacity & Storage"
+    url: "/capacity/"
+  - title: "Records"
+    url: "/records/"
+  - title: "Value Delivered"
+    url: "/value/"
+  - title: "Methodology"
+    url: "/methodology/"
+  - title: "Open Data"
+    url: "/data-access/"
+  - title: "Cluster Docs"
+    url: "https://cluster-policy.ds.uchicago.edu/"

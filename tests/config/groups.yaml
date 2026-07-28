@@ -1,0 +1,33 @@
+# Test allowlist.
+#
+# Deliberately includes solo-lab, which has exactly ONE user in the fixture.
+# It is allowlisted but must still collapse into "Other" because k-anonymity
+# outranks the allowlist. unlisted-lab is absent entirely and must also
+# collapse, despite having enough users.
+accounts:
+  kolar-lab:
+    display_name: "Kolar Lab"
+    department: "Statistics"
+    division: "Physical Sciences Division"
+    type: lab
+  dsi-clinic:
+    display_name: "DSI Clinic"
+    department: "Data Science Institute"
+    division: "Data Science Institute"
+    type: clinic
+  cmsc-25025:
+    display_name: "CMSC 25025 Machine Learning"
+    department: "Computer Science"
+    division: "Physical Sciences Division"
+    type: course
+  solo-lab:
+    display_name: "Solo Lab"
+    department: "Chemistry"
+    division: "Physical Sciences Division"
+    type: lab
+
+fallback:
+  display_name: "Other"
+  department: "Other"
+  division: "Other"
+  type: other

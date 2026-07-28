@@ -1,0 +1,39 @@
+{%- comment -%}
+  Renders the hierarchical navigation sidebar.
+  Reads data from _data/navigation.yml
+{%- endcomment -%}
+<div class="sidebar" id="sidebar">
+  <button class="sidebar-close" id="sidebar-close" aria-label="Close navigation">&times;</button>
+  <nav class="sidebar-nav">
+    <ul>
+      {%- for item in site.data.navigation.main -%}
+        {%- assign is_active_parent = false -%}
+        {%- assign is_active_item = page.url == item.url -%}
+        {%- if item.children -%}
+          {%- for child in item.children -%}
+            {%- if page.url == child.url or page.url contains child.url -%}
+              {%- assign is_active_parent = true -%}
+            {%- endif -%}
+          {%- endfor -%}
+        {%- endif -%}
+        <li class="nav__item{% if is_active_item %} active{% endif %}{% if is_active_parent %} active-parent{% endif %}{% if item.children %} parent{% endif %}">
+          <a href="{{ item.url | relative_url }}">
+            {{ item.title }}
+            {% if item.children %}
+              <span class="sidebar-toggle-indicator">&#9662;</span>
+            {% endif %}
+          </a>
+          {%- if item.children -%}
+            <ul class="nav__item-children">
+              {%- for child in item.children -%}
+                <li class="nav__item{% if page.url == child.url or page.url contains child.url %} active{% endif %}">
+                  <a href="{{ child.url | relative_url }}">{{ child.title }}</a>
+                </li>
+              {%- endfor -%}
+            </ul>
+          {%- endif -%}
+        </li>
+      {%- endfor -%}
+    </ul>
+  </nav>
+</div>

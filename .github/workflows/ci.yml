@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  collector:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install --quiet PyYAML pytest ruff
+
+      - name: Lint
+        run: |
+          ruff check collector tests
+          ruff format --check collector tests
+
+      # The whole pipeline runs against canned command output, so this needs
+      # no Slurm, no LDAP, and no cluster network.
+      - name: Test
+        run: python -m pytest tests -q
+
+      - name: Verify committed data still passes the privacy gate
+        run: |
+          if [ ! -d data ] || [ -z "$(find data -name '*.json' -print -quit)" ]; then
+            echo "No published data yet — nothing to verify."
+            exit 0
+          fi
+          python -m collector.cli verify data --summary _data/summary.json
+
+  site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.1"
+          bundler-cache: true
+
+      # Catches Liquid errors on a pull request rather than on main, where a
+      # broken build would take the live site's deploy down with it.
+      - name: Build the site
+        run: bundle exec jekyll build
+        env:
+          JEKYLL_ENV: production

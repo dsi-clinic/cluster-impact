@@ -1,0 +1,10 @@
+gpu001|gpu:a100:4(S:0-1)|idle|64|515000
+gpu002|gpu:a100:4(S:0-1)|mixed|64|515000
+gpu003|gpu:a40:4(S:0-1)|allocated|48|386000
+gpu004|gpu:a40:4(S:0-1)|idle|48|386000
+gpu005|gpu:l40s:8(S:0-1)|mixed|96|772000
+gpu006|gpu:l40s:8(S:0-1)|allocated|96|772000
+gpu007|gpu:h100:8(S:0-1)|allocated|128|1030000
+gpu008|gpu:h100:8(S:0-1)|drain|128|1030000
+gpu009|gpu:h200:8(S:0-1)|mixed|192|2060000
+cpu001||idle|64|257000

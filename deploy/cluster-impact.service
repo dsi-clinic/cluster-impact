@@ -1,0 +1,41 @@
+[Unit]
+Description=Collect and publish DSI cluster impact metrics
+Documentation=https://github.com/dsi-clinic/cluster-impact
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+
+# A long backfill and a nightly run must not overlap: both write the same
+# month files and the same on-cluster state.
+ExecStartPre=/usr/bin/flock -n /var/lock/cluster-impact.lock true
+
+# Keep the working copy current before writing into it, so the push at the end
+# is a fast-forward in the common case.
+ExecStartPre=/usr/bin/git -C /var/lib/cluster-impact/repo pull --rebase --quiet
+
+ExecStart=/usr/bin/podman run --rm --name cluster-impact-collect \
+    --network host \
+    -v /etc/slurm/slurm.conf:/etc/slurm/slurm.conf:ro \
+    -v /run/munge/munge.socket.2:/run/munge/munge.socket.2:ro \
+    -v /var/lib/cluster-impact/raw:/var/lib/cluster-impact/raw \
+    -v /var/lib/cluster-impact/repo:/repo \
+    -v /etc/cluster-impact/deploy_key:/secrets/deploy_key:ro \
+    -v /root/.ssh/known_hosts:/root/.ssh/known_hosts:ro \
+    localhost/cluster-impact-collector:latest \
+    collect
+
+TimeoutStartSec=3h
+Restart=no
+
+# The collector reads accounting data and writes two directories. It has no
+# reason to touch anything else.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/cluster-impact /var/lock
+
+[Install]
+WantedBy=multi-user.target

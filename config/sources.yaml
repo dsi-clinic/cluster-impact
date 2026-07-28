@@ -1,0 +1,86 @@
+# Data source endpoints and feature flags.
+#
+# Every source can be disabled independently. A disabled or unreachable source
+# degrades the site gracefully: its panels render an "unavailable" state and
+# health.json records why, rather than failing the whole run. The one thing
+# that is never optional is the privacy layer.
+
+cluster_name: "dsicluster"
+
+privacy:
+  # Minimum distinct users before a group may be named publicly.
+  # Below this, the bucket merges into "Other". Do not lower this without
+  # thinking hard about who a 2-person bucket actually identifies.
+  k_anonymity: 3
+  # Recompute this many trailing days on every run. sacct records settle late:
+  # jobs still running at snapshot time, and slurmdbd accounting lag.
+  resettle_days: 7
+
+sources:
+  slurm:
+    enabled: true
+    # sacct/sreport run as subprocesses; the container needs slurm.conf + munge.
+    sacct_bin: sacct
+    sreport_bin: sreport
+    sinfo_bin: sinfo
+    # Chunk backfill queries. A multi-year sacct range will hammer slurmdbd.
+    backfill_chunk_days: 7
+    # States counted as "the job ran and finished on purpose".
+    success_states: [COMPLETED]
+    # Everything else is bucketed by name: FAILED, TIMEOUT, OUT_OF_MEMORY,
+    # CANCELLED, NODE_FAIL, PREEMPTED.
+
+  storage:
+    enabled: true
+    # Root on the storage nodes is reachable from builder, not from fe0x
+    # (permitted_root_nets). Set ssh_via to the jump host accordingly.
+    ssh_via: "builder.cs.uchicago.edu"
+    ssh_user: root
+    timeout_seconds: 60
+
+  directory:
+    enabled: true
+    ldap_uri: null              # TODO(bennett): ldaps://...
+    base_dn: null               # TODO(bennett)
+    user_filter: "(objectClass=posixAccount)"
+    group_filter: "(objectClass=posixGroup)"
+    foreman_url: null           # TODO(bennett): https://builder.cs.uchicago.edu
+    # Credentials come from the environment, never from this file:
+    #   CLUSTER_IMPACT_LDAP_BIND_DN / CLUSTER_IMPACT_LDAP_BIND_PW
+    #   CLUSTER_IMPACT_FOREMAN_USER / CLUSTER_IMPACT_FOREMAN_TOKEN
+
+  prometheus:
+    enabled: true
+    # Prometheus' own API, not the Grafana proxy in front of it.
+    url: null                   # TODO(bennett): confirm the endpoint behind graf.ds.uchicago.edu
+    step: "5m"
+    queries:
+      node_up: 'up{job="node"}'
+      net_rx_bytes: 'rate(node_network_receive_bytes_total{device!~"lo|veth.*"}[5m])'
+      net_tx_bytes: 'rate(node_network_transmit_bytes_total{device!~"lo|veth.*"}[5m])'
+      disk_read_bytes: 'rate(node_disk_read_bytes_total[5m])'
+      disk_write_bytes: 'rate(node_disk_written_bytes_total[5m])'
+
+  dcgm:
+    # OFF until the DCGM exporters are deployed. The code path and the site
+    # panels both exist already; flipping this to true is the whole rollout.
+    # Until then the site says "allocated", never "utilized", because
+    # allocation is all Slurm can actually tell us.
+    enabled: false
+    queries:
+      sm_active: 'DCGM_FI_PROF_SM_ACTIVE'
+      gpu_util: 'DCGM_FI_DEV_GPU_UTIL'
+      mem_used: 'DCGM_FI_DEV_FB_USED'
+      power_watts: 'DCGM_FI_DEV_POWER_USAGE'
+
+publish:
+  repo_dir: "/repo"
+  data_dir: "data"
+  summary_path: "_data/summary.json"
+  branch: "main"
+  commit_author: "cluster-impact bot <techstaff@ds.uchicago.edu>"
+  # Only these paths may ever be committed by the collector.
+  allowed_paths:
+    - "data/"
+    - "_data/summary.json"
+  rebase_retries: 3

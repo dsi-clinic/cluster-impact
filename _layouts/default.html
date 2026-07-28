@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="{{ site.locale | slice: 0,2 | default: "en" }}" class="no-js">
+  <head>
+    {% include head.html %}
+    {% include head/custom.html %}
+  </head>
+
+  <body class="layout--{{ page.layout | default: "home" }} {% if page.classes %}{{ page.classes | join: ' ' }}{% endif %}">
+    {% include_cached skip-links.html %}
+
+    {% include sidebar.html %}
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <div class="initial-content-wrap main--with-sidebar">
+      {% include masthead.html %}
+
+
+      {{ content }}
+
+      {% if site.search == true %}
+        <div class="search-content">
+          {% include_cached search/search_form.html %}
+        </div>
+      {% endif %}
+
+      <div id="footer" class="page__footer">
+        <footer>
+          {% include footer/custom.html %}
+          {% include_cached footer.html %}
+        </footer>
+      </div>
+    </div>
+
+    {% include scripts.html %}
+
+    <script>
+    (function () {
+      var toggle  = document.getElementById('sidebar-toggle');
+      var sidebar = document.getElementById('sidebar');
+      var overlay = document.getElementById('sidebar-overlay');
+      var close   = document.getElementById('sidebar-close');
+
+      function openSidebar()  {
+        sidebar.classList.add('is-open');
+        overlay.classList.add('is-visible');
+        toggle.setAttribute('aria-expanded', 'true');
+      }
+      function closeSidebar() {
+        sidebar.classList.remove('is-open');
+        overlay.classList.remove('is-visible');
+        toggle.setAttribute('aria-expanded', 'false');
+      }
+
+      if (toggle)  toggle.addEventListener('click', function() {
+        sidebar.classList.contains('is-open') ? closeSidebar() : openSidebar();
+      });
+      if (close)   close.addEventListener('click', closeSidebar);
+      if (overlay)  overlay.addEventListener('click', closeSidebar);
+    })();
+    </script>
+  </body>
+</html>

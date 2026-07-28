@@ -1,0 +1,7 @@
+# Local development overrides. Layered on top of _config.yml by `make serve`;
+# never used in CI, so production URLs stay correct in the deployed build.
+url: "http://localhost:4000"
+baseurl: ""
+livereload: true
+sass:
+  quiet_deps: true

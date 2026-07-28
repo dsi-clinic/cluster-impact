@@ -1,0 +1,27 @@
+# Jekyll
+_site/
+.sass-cache/
+.jekyll-cache/
+.jekyll-metadata
+vendor/
+.bundle/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Collector runtime state — raw records must NEVER reach this public repo
+raw/
+*.jsonl
+*.jsonl.zst
+
+# Secrets
+*.pem
+id_ed25519*
+.env
+
+.DS_Store

@@ -1,0 +1,14 @@
+{%- comment -%}
+  Shown when the collector has not published anything yet. An honest empty
+  state beats a page of blank axes, which reads as a broken site.
+{%- endcomment -%}
+{%- assign summary = site.data.summary -%}
+{%- if summary == nil or summary.as_of == nil -%}
+<div class="data-state">
+  <span class="data-state__title">No data published yet</span>
+  This site renders metrics that a collector on the DSI cluster publishes into
+  this repository. Until the first run completes, the figures below are empty.
+  See <a href="{{ '/methodology/' | relative_url }}">Methodology</a> for how the
+  numbers are produced.
+</div>
+{%- endif -%}

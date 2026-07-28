@@ -1,0 +1,19 @@
+{%- comment -%}
+  One headline tile, rendered at BUILD time from _data/summary.json.
+  Works with JavaScript disabled, which is what makes these numbers usable in
+  screenshots, PDF exports, and link previews.
+
+  Params: label, value, unit, note, prefix
+{%- endcomment -%}
+{%- assign v = include.value -%}
+<div class="stat-tile{% if v == nil or v == '' %} stat-tile--empty{% endif %}">
+  <span class="stat-tile__label">{{ include.label }}</span>
+  <span class="stat-tile__value">
+    {%- if v == nil or v == '' -%}
+      not yet
+    {%- else -%}
+      {{ include.prefix }}{{ v }}{% if include.unit %}<span class="stat-tile__unit">{{ include.unit }}</span>{% endif %}
+    {%- endif -%}
+  </span>
+  {%- if include.note %}<span class="stat-tile__note">{{ include.note }}</span>{% endif -%}
+</div>

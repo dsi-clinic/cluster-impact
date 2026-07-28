@@ -1,0 +1,32 @@
+cluster_name: "testcluster"
+
+privacy:
+  k_anonymity: 3
+  resettle_days: 7
+
+sources:
+  slurm:
+    enabled: true
+    sacct_bin: sacct
+    sreport_bin: sreport
+    sinfo_bin: sinfo
+    backfill_chunk_days: 7
+  storage:
+    enabled: false
+  directory:
+    enabled: false
+  prometheus:
+    enabled: false
+  dcgm:
+    enabled: false
+
+publish:
+  repo_dir: "."
+  data_dir: "data"
+  summary_path: "_data/summary.json"
+  branch: "main"
+  commit_author: "test bot <test@example.invalid>"
+  allowed_paths:
+    - "data/"
+    - "_data/summary.json"
+  rebase_retries: 0

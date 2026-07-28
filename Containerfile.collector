@@ -1,0 +1,47 @@
+# Collector image. Runs on-cluster under podman, on a host that can reach
+# slurmdbd, the storage nodes, LDAP/Foreman, and Prometheus.
+#
+#   podman build -f Containerfile.collector -t cluster-impact-collector .
+#
+#   podman run --rm --network host \
+#     -v /etc/slurm/slurm.conf:/etc/slurm/slurm.conf:ro \
+#     -v /run/munge/munge.socket.2:/run/munge/munge.socket.2:ro \
+#     -v /var/lib/cluster-impact/raw:/var/lib/cluster-impact/raw \
+#     -v /var/lib/cluster-impact/repo:/repo \
+#     -v /etc/cluster-impact/deploy_key:/secrets/deploy_key:ro \
+#     cluster-impact-collector collect
+#
+# The Slurm client must be close enough in version to the cluster's slurmctld.
+# `cli.py doctor` compares them and fails loudly on a mismatch; the
+# `--from-dump` path is the fallback if they ever diverge.
+
+FROM python:3.12-slim
+
+ARG SLURM_CLIENT_PKG=slurm-client
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      ${SLURM_CLIENT_PKG} \
+      munge \
+      git \
+      openssh-client \
+      ca-certificates \
+      zstd \
+      libldap-2.5-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY pyproject.toml ./
+RUN pip install --no-cache-dir \
+      "httpx>=0.27" "PyYAML>=6.0" "python-ldap>=3.4" "jsonschema>=4.21"
+
+COPY collector/ ./collector/
+COPY config/ ./config/
+
+ENV PYTHONUNBUFFERED=1 \
+    CLUSTER_IMPACT_RAW=/var/lib/cluster-impact/raw \
+    CLUSTER_IMPACT_REPO=/repo \
+    GIT_SSH_COMMAND="ssh -i /secrets/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+
+ENTRYPOINT ["python", "-m", "collector.cli"]
+CMD ["collect"]
