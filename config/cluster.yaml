@@ -262,16 +262,18 @@ capacity_timeline:
 cloud_pricing:
   currency: USD
   basis: "on-demand, single-GPU instance, US region, list price (no committed-use or spot discount)"
-  # TODO(bennett): pick the provider you want to be compared against, fill in
-  # real quoted rates, set source + asof, then delete this TODO.
-  source: null        # e.g. "https://aws.amazon.com/ec2/pricing/on-demand/"
-  asof: null          # e.g. "2026-07-28"
+  # Provider: CoreWeave. A40, A100 80GB PCIe, H100 PCIe rates are per-GPU
+  # direct from coreweave.com/pricing/classic. L40S and H200 rates are derived
+  # from 8-GPU instance prices on coreweave.com/pricing ($18.00/hr ÷ 8 and
+  # $50.44/hr ÷ 8 respectively). AWS was considered but has no A40 instances.
+  source: "https://www.coreweave.com/pricing/classic"
+  asof: "2026-07-29"
   usd_per_gpu_hour:
-    a40: null
-    a100: null
-    l40s: null
-    h100: null
-    h200: null
+    a40: 1.28     # per-GPU, coreweave.com/pricing/classic
+    a100: 2.21    # 80GB PCIe, coreweave.com/pricing/classic
+    l40s: 2.25    # $18.00/hr 8-GPU instance ÷ 8, coreweave.com/pricing
+    h100: 4.25    # PCIe, coreweave.com/pricing/classic
+    h200: 6.31    # $50.44/hr 8-GPU instance ÷ 8, coreweave.com/pricing
 
 # ---------------------------------------------------------------------------
 # Filesystems reported on the storage page.
