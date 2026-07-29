@@ -51,18 +51,19 @@ sources:
     # There is NO separate ds.uchicago.edu LDAP — the DSI cluster authenticates
     # against the CS directory.
     ldap_uri: "ldaps://ldap.cs.uchicago.edu"
-    #
-    # CAREFUL — users and groups do NOT share a base, and this schema has only
-    # one `base_dn` field. sssd.conf uses:
-    #     ldap_user_search_base  = dc=uchicago,dc=edu?subtree?(CSAccount=TRUE)
-    #     ldap_group_search_base = ou=group,dc=cs,dc=uchicago,dc=edu
-    # The group base is a DESCENDANT of the user base, so a single subtree
-    # search rooted at dc=uchicago,dc=edu finds both and is therefore correct
-    # but wasteful — it walks the whole university tree to find our groups.
-    # imp-5z6 splits this into user_base_dn / group_base_dn; until that lands,
-    # the broad base is the only value that returns complete results.
-    base_dn: "dc=uchicago,dc=edu"
-    #
+    # Users and groups do not share an efficient search base in this directory,
+    # so each search gets its own. These mirror the cluster's own sssd.conf
+    # (ldap_user_search_base / ldap_group_search_base). The group base is a
+    # descendant of the user base, so a single shared base returns complete
+    # results — it just walks the entire university subtree for every group
+    # lookup. sssd's scope/filter suffix ("?subtree?(CSAccount=TRUE)") is
+    # deliberately NOT part of these values: they must be plain DNs, and the
+    # filters live in user_filter / group_filter below.
+    user_base_dn: dc=uchicago,dc=edu
+    group_base_dn: ou=group,dc=cs,dc=uchicago,dc=edu
+    # Fallback used for both searches when the two keys above are absent.
+    # Older configs that set only base_dn keep working unchanged.
+    base_dn: null
     # An account on this cluster is one the CS directory marks CSAccount=TRUE.
     # Filtering on objectClass=posixAccount ALONE over dc=uchicago,dc=edu would
     # sweep in university accounts that have no access here and inflate the

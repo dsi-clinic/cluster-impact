@@ -30,10 +30,25 @@ class DirectorySource:
 
     # -- LDAP -------------------------------------------------------------
 
+    # People and groups live under different subtrees here, so each search
+    # carries its own base (mirroring the cluster's sssd.conf). The group base
+    # is a descendant of the user base, so a single shared base still returns
+    # complete results — it just makes every group lookup walk the whole
+    # university subtree. `base_dn` remains the fallback for both so older
+    # configs keep working unchanged.
+
+    @property
+    def user_base_dn(self) -> str | None:
+        return self.settings.get("user_base_dn") or self.settings.get("base_dn")
+
+    @property
+    def group_base_dn(self) -> str | None:
+        return self.settings.get("group_base_dn") or self.settings.get("base_dn")
+
     @property
     def ldap_configured(self) -> bool:
         return (
-            bool(self.settings.get("ldap_uri") and self.settings.get("base_dn"))
+            bool(self.settings.get("ldap_uri") and self.user_base_dn and self.group_base_dn)
             and ldap is not None
         )
 
@@ -42,7 +57,8 @@ class DirectorySource:
             return {"available": False}, ["directory: LDAP not configured"]
 
         uri = self.settings["ldap_uri"]
-        base_dn = self.settings["base_dn"]
+        user_base_dn = self.user_base_dn
+        group_base_dn = self.group_base_dn
         bind_dn = os.environ.get("CLUSTER_IMPACT_LDAP_BIND_DN")
         bind_pw = os.environ.get("CLUSTER_IMPACT_LDAP_BIND_PW")
 
@@ -56,14 +72,14 @@ class DirectorySource:
                 conn.simple_bind_s()
 
             users = conn.search_s(
-                base_dn,
+                user_base_dn,
                 ldap.SCOPE_SUBTREE,
                 self.settings.get("user_filter", "(objectClass=posixAccount)"),
                 # Ask for one cheap attribute; we only ever count the rows.
                 ["uid"],
             )
             groups = conn.search_s(
-                base_dn,
+                group_base_dn,
                 ldap.SCOPE_SUBTREE,
                 self.settings.get("group_filter", "(objectClass=posixGroup)"),
                 ["cn"],
