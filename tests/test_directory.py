@@ -15,16 +15,23 @@ from collector.sources.directory import DirectorySource
 
 USER_BASE = "dc=uchicago,dc=edu"
 GROUP_BASE = "ou=group,dc=cs,dc=uchicago,dc=edu"
+LEGACY_BASE = "dc=legacy,dc=example,dc=edu"
 
 
 @pytest.fixture
 def fake_ldap(monkeypatch):
     """Install a fake python-ldap whose search_s records the base it was given."""
     conn = MagicMock()
-    # Two users, one group — distinct counts so a swapped base is obvious.
-    conn.search_s.side_effect = lambda base, *_: (
-        [("uid=a", {}), ("uid=b", {})] if "uid" in str(_[-1]) else [("cn=g", {})]
-    )
+
+    # Discriminate on the filter, not the base: the fallback tests pass the
+    # same base to both searches. Two users, one group — distinct counts so a
+    # swapped pair of searches is obvious.
+    def _search(base, scope, filterstr, attrlist):
+        if "posixAccount" in filterstr:
+            return [("uid=a", {}), ("uid=b", {})]
+        return [("cn=g", {})]
+
+    conn.search_s.side_effect = _search
     fake = MagicMock()
     fake.SCOPE_SUBTREE = 2
     fake.initialize.return_value = conn
@@ -49,14 +56,28 @@ def test_specific_bases_resolve_independently():
 
 
 def test_both_bases_fall_back_to_base_dn():
-    source = DirectorySource({"ldap_uri": "ldaps://ldap.example.edu", "base_dn": USER_BASE})
-    assert source.user_base_dn == USER_BASE
-    assert source.group_base_dn == USER_BASE
+    source = DirectorySource({"ldap_uri": "ldaps://ldap.example.edu", "base_dn": LEGACY_BASE})
+    assert source.user_base_dn == LEGACY_BASE
+    assert source.group_base_dn == LEGACY_BASE
 
 
-def test_specific_base_wins_over_base_dn():
-    source = DirectorySource({"base_dn": USER_BASE, "group_base_dn": GROUP_BASE})
+def test_specific_bases_win_over_base_dn():
+    # base_dn is a distinct sentinel, so resolving to the specific keys cannot
+    # be confused with falling back.
+    source = DirectorySource(
+        {
+            "base_dn": LEGACY_BASE,
+            "user_base_dn": USER_BASE,
+            "group_base_dn": GROUP_BASE,
+        }
+    )
     assert source.user_base_dn == USER_BASE
+    assert source.group_base_dn == GROUP_BASE
+
+
+def test_one_specific_base_falls_back_for_the_other():
+    source = DirectorySource({"base_dn": LEGACY_BASE, "group_base_dn": GROUP_BASE})
+    assert source.user_base_dn == LEGACY_BASE
     assert source.group_base_dn == GROUP_BASE
 
 
@@ -76,7 +97,7 @@ def test_not_configured_when_only_one_specific_base_is_set(fake_ldap):
 
 
 def test_configured_with_base_dn_only(fake_ldap):
-    source = DirectorySource({"ldap_uri": "ldaps://ldap.example.edu", "base_dn": USER_BASE})
+    source = DirectorySource({"ldap_uri": "ldaps://ldap.example.edu", "base_dn": LEGACY_BASE})
     assert source.ldap_configured is True
 
 
@@ -98,10 +119,10 @@ def test_each_search_uses_its_own_base(fake_ldap):
 
 def test_fallback_path_sends_base_dn_to_both_searches(fake_ldap):
     _, conn = fake_ldap
-    source = DirectorySource({"ldap_uri": "ldaps://ldap.example.edu", "base_dn": USER_BASE})
+    source = DirectorySource({"ldap_uri": "ldaps://ldap.example.edu", "base_dn": LEGACY_BASE})
     doc, warnings = source.fetch_account_counts()
 
-    assert _search_bases(conn) == [USER_BASE, USER_BASE]
+    assert _search_bases(conn) == [LEGACY_BASE, LEGACY_BASE]
     assert doc["available"] is True
     assert not warnings
 
