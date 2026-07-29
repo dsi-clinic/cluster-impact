@@ -1,9 +1,13 @@
 <!-- start custom head snippets -->
 
-<!-- Umami Analytics.
-     TODO(bennett): register a NEW website id for cluster-impact rather than
-     reusing the policy site's — sharing one id merges the two sites' stats. -->
-<script defer src="https://analytics.ds.uchicago.edu/script.js" data-website-id="REPLACE-WITH-NEW-UMAMI-ID"></script>
+<!-- No analytics, deliberately (imp-wsj, decided 2026-07-29).
+     This is a public university page whose whole argument is that it discloses
+     its own methodology, so handing every visitor's IP to a third party just to
+     count page views was a poor trade. It also removes a live dependency: the
+     placeholder id that used to sit here loaded analytics.ds.uchicago.edu on
+     every page and recorded nothing, since the id was never valid.
+     Same reasoning as vendoring ECharts below. Do not re-add a tracker without
+     deciding that trade again. -->
 
 <link rel="apple-touch-icon" sizes="180x180" href="{{ '/assets/images/dsi-logo.webp' | relative_url }}">
 <link rel="icon" href="{{ '/assets/images/favicon.ico' | relative_url }}">

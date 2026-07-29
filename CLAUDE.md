@@ -104,6 +104,11 @@ gate that has never failed is not a tested gate — keep them.
 
 ## Configuration still incomplete
 
-`python -m collector.cli doctor` lists these. Capacity-timeline dates,
-the cloud price table, LDAP/Foreman/Prometheus endpoints, `groups.yaml`, and
-the Umami website id all still need real values.
+`python -m collector.cli doctor` lists these. The cloud price table,
+the Foreman URL, and `groups.yaml` still need real values.
+
+Settled, so don't re-open them: capacity-timeline dates and the GPU mix are
+reconstructed and evidence-cited in `config/cluster.yaml`; Prometheus is
+`s10.cs.uchicago.edu:9090`; LDAP is `ldaps://ldap.cs.uchicago.edu` with an
+anonymous bind (no credential to deploy); and the site ships **no analytics**
+by deliberate choice — see the comment in `_includes/head/custom.html`.

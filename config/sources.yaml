@@ -40,14 +40,48 @@ sources:
 
   directory:
     enabled: true
-    ldap_uri: null              # TODO(bennett): ldaps://...
-    base_dn: null               # TODO(bennett)
-    user_filter: "(objectClass=posixAccount)"
+    # Derived 2026-07-29 (imp-73k) from what the cluster nodes themselves use,
+    # which is authoritative over any hand-entered value: puppet-modules
+    # code/hiera/common.yaml sets ldap_integration::nss_method: sssd and
+    # ldap_integration::nss::sssd::ldap_server: ldap.cs.uchicago.edu, and every
+    # DSI node (fe0x, dsi_cluster*) applies the ldap_integration class. The
+    # rendered sssd.conf (common/ldap_integration/templates/sssd.conf.erb) is
+    # the exact source of the values below.
+    #
+    # There is NO separate ds.uchicago.edu LDAP — the DSI cluster authenticates
+    # against the CS directory.
+    ldap_uri: "ldaps://ldap.cs.uchicago.edu"
+    #
+    # CAREFUL — users and groups do NOT share a base, and this schema has only
+    # one `base_dn` field. sssd.conf uses:
+    #     ldap_user_search_base  = dc=uchicago,dc=edu?subtree?(CSAccount=TRUE)
+    #     ldap_group_search_base = ou=group,dc=cs,dc=uchicago,dc=edu
+    # The group base is a DESCENDANT of the user base, so a single subtree
+    # search rooted at dc=uchicago,dc=edu finds both and is therefore correct
+    # but wasteful — it walks the whole university tree to find our groups.
+    # imp-5z6 splits this into user_base_dn / group_base_dn; until that lands,
+    # the broad base is the only value that returns complete results.
+    base_dn: "dc=uchicago,dc=edu"
+    #
+    # An account on this cluster is one the CS directory marks CSAccount=TRUE.
+    # Filtering on objectClass=posixAccount ALONE over dc=uchicago,dc=edu would
+    # sweep in university accounts that have no access here and inflate the
+    # "active accounts" figure, so both conditions are required.
+    user_filter: "(&(objectClass=posixAccount)(CSAccount=TRUE))"
     group_filter: "(objectClass=posixGroup)"
     foreman_url: https://builder.cs.uchicago.edu
     # Credentials come from the environment, never from this file:
     #   CLUSTER_IMPACT_LDAP_BIND_DN / CLUSTER_IMPACT_LDAP_BIND_PW
     #   CLUSTER_IMPACT_FOREMAN_USER / CLUSTER_IMPACT_FOREMAN_TOKEN
+    #
+    # LDAP: leave both LDAP vars UNSET. Anonymous read is sufficient for the
+    # attributes we need (uid, uidNumber, cn, memberUid) — confirmed 2026-07-29
+    # (imp-73k). We count accounts and group membership; we never read
+    # userPassword or any private attribute. So the collector deploys with no
+    # LDAP credential at all, which is one fewer secret on the collector host
+    # and one fewer thing that can leak from a public repo's tooling. If a
+    # future change needs a bound search, that is a decision to re-make, not a
+    # variable to quietly fill in.
 
   prometheus:
     enabled: true
