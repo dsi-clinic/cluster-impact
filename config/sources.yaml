@@ -44,7 +44,7 @@ sources:
     base_dn: null               # TODO(bennett)
     user_filter: "(objectClass=posixAccount)"
     group_filter: "(objectClass=posixGroup)"
-    foreman_url: null           # TODO(bennett): https://builder.cs.uchicago.edu
+    foreman_url: https://builder.cs.uchicago.edu
     # Credentials come from the environment, never from this file:
     #   CLUSTER_IMPACT_LDAP_BIND_DN / CLUSTER_IMPACT_LDAP_BIND_PW
     #   CLUSTER_IMPACT_FOREMAN_USER / CLUSTER_IMPACT_FOREMAN_TOKEN
