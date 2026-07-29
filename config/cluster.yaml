@@ -9,13 +9,22 @@
 # ---------------------------------------------------------------------------
 # Per-model constants.
 #
-# tflops_* are DENSE peak tensor-core figures (no 2:4 sparsity doubling).
+# tflops_* are DENSE peak TENSOR-CORE figures (no 2:4 sparsity doubling).
 # Vendor sheets usually quote the sparse number first; we deliberately use the
 # smaller, honest one. Recheck against the spec sheet if you change a value.
 #
-# TODO(bennett): confirm SXM vs PCIe variant for each model actually installed.
-# The FP16 figures below assume: A40 (PCIe), A100 80GB (SXM4), L40S (PCIe),
-# H100 (SXM5), H200 (SXM5). A PCIe H100 is ~756 not ~989.
+# CAREFUL — do not confuse tensor-core FP16 with vector (non-tensor) FP16.
+# They differ by ~4x on Ampere. A100's vector FP16 is ~78 TFLOPS; its FP16
+# TENSOR CORE figure is 312 TFLOPS, and 312 is the correct value here. This
+# has been mistaken once already (imp-wmb); PCIe and SXM4 A100s share the same
+# GA100 die and 108 SMs, so tensor throughput is identical across form factors
+# and only TDP and sustained clocks differ.
+#
+# Variants verified 2026-07-29 (imp-wmb): A40 is PCIe-only, L40S is PCIe-only,
+# A100 is the 80GB PCIe part. H100 and H200 form factors remain UNVERIFIED —
+# the values below assume SXM5. If the H100s turn out to be PCIe, dense FP16 is
+# ~756 not ~989 and the headline PFLOPS figure is ~24% too high. No H200 PCIe
+# part exists, so H200 is safe by elimination.
 # ---------------------------------------------------------------------------
 gpu_models:
   a40:
@@ -25,11 +34,11 @@ gpu_models:
     tflops_fp8_dense: null      # no FP8 support (Ampere)
     tdp_watts: 300
   a100:
-    display: "NVIDIA A100 80GB"
+    display: "NVIDIA A100 80GB PCIe"
     memory_gb: 80
-    tflops_fp16_dense: 312.0
+    tflops_fp16_dense: 312.0    # tensor core, dense. NOT the ~78 vector figure.
     tflops_fp8_dense: null      # no FP8 support (Ampere)
-    tdp_watts: 400
+    tdp_watts: 300              # PCIe part; SXM4 would be 400
   l40s:
     display: "NVIDIA L40S"
     memory_gb: 48
@@ -60,46 +69,112 @@ gpu_models:
 # entry whose `effective` date is <= the day being computed, and warns if the
 # most recent entry disagrees with what `sinfo` reports today.
 #
-# TODO(bennett): these dates and counts are PLACEHOLDERS reconstructed from
-# the documented "~140 GPUs" total. Replace with real procurement/Foreman
-# dates before the first publish — `cli.py doctor` will flag the mismatch
-# against live sinfo until the final entry is correct.
+# Reconstructed 2026-07-29 (imp-sed) from the earlier of each node's first DNS
+# record (dns repo, master/ds.uchicago.edu) and its first Puppet hiera file
+# (puppet-modules). The node -> GPU-model mapping comes from Slurm gres.conf in
+# puppet-modules, which is authoritative. Every entry cites its evidence.
+#
+# Note: puppet-modules also contains common-19.yaml / common-23.yaml describing
+# an OLDER cluster (a001-a006 RTX2080Ti, b001-b003 A40). Those predate this
+# cluster and are deliberately excluded.
 # ---------------------------------------------------------------------------
 capacity_timeline:
-  - effective: "2022-01-01"
-    note: "PLACEHOLDER — earliest reconstructed state"
+  - effective: "2022-07-28"
+    note: "g001-g010 (A40). DNS e43c02c 'Add private network for DS cluster nodes'."
     gpus:
-      a40: 24
-      a100: 16
-  - effective: "2023-07-01"
-    note: "PLACEHOLDER — L40S addition"
+      a40: 40                   # g001-g010, 10 x 4
+  - effective: "2022-11-22"
+    note: "h001-h002 (A100) join. DNS 2cabdb5."
     gpus:
-      a40: 24
-      a100: 16
-      l40s: 32
-  - effective: "2024-09-01"
-    note: "PLACEHOLDER — H100 addition"
+      a40: 40
+      a100: 8                   # h001+h002, 2 x 4
+  - effective: "2023-06-14"
+    note: "j001-ds..j004-ds (8-way A100) join. DNS 2285ce1."
     gpus:
-      a40: 24
-      a100: 16
-      l40s: 32
-      h100: 40
-  - effective: "2025-06-01"
-    note: "PLACEHOLDER — first H200s"
+      a40: 40
+      a100: 40                  # h001-h002 (8) + j001..j004 (32)
+  - effective: "2023-07-14"
+    note: "j005-ds (8-way A100) joins. DNS 7951fd5."
     gpus:
-      a40: 24
-      a100: 16
-      l40s: 32
-      h100: 40
-      h200: 28
-  - effective: "2026-08-01"
-    note: "r001-r003, 3x 8-way H200 (pending datacenter move + PXE)"
+      a40: 40
+      a100: 48
+  - effective: "2024-03-14"
+    note: "k001-k003 (L40S) join. DNS e7ed69f."
     gpus:
-      a40: 24
-      a100: 16
-      l40s: 32
-      h100: 40
-      h200: 52
+      a40: 40
+      a100: 48
+      l40s: 12                  # k001-k003, 3 x 4
+  - effective: "2024-03-28"
+    note: "i001-ds (8-way A100) joins. DNS 4d75747 'Rename i001 for RT#398467'."
+    gpus:
+      a40: 40
+      a100: 56
+      l40s: 12
+  - effective: "2024-04-02"
+    note: "l001 (H100) joins. DNS e86dfd6."
+    gpus:
+      a40: 40
+      a100: 56
+      l40s: 12
+      h100: 4
+  - effective: "2024-06-21"
+    note: "g002 GPUs swapped A40 -> A100. puppet-modules common.yaml 2f7ce749."
+    gpus:
+      a40: 36                   # g002's 4 leave the A40 pool
+      a100: 60                  # and join the A100 pool
+      l40s: 12
+      h100: 4
+  - effective: "2024-07-24"
+    note: "m001-m002 (H100) join. Puppet hiera 2024-07-24; DNS b405aad 07-31."
+    gpus:
+      a40: 36
+      a100: 60
+      l40s: 12
+      h100: 12
+  - effective: "2024-11-01"
+    note: "n001 (H100) joins. Puppet hiera 2024-11-01; DNS d1b0082 11-12."
+    gpus:
+      a40: 36
+      a100: 60
+      l40s: 12
+      h100: 16
+  - effective: "2025-08-18"
+    note: "o001 (H200) joins. Puppet hiera 2025-08-18; DNS f2fe38a 08-22."
+    gpus:
+      a40: 36
+      a100: 60
+      l40s: 12
+      h100: 16
+      h200: 4
+  - effective: "2025-08-21"
+    note: "p001-p003 (H200) join. Puppet hiera 2025-08-21."
+    gpus:
+      a40: 36
+      a100: 60
+      l40s: 12
+      h100: 16
+      h200: 16
+  - effective: "2025-09-18"
+    note: "q001 (H200) joins. Puppet hiera 2025-09-18; DNS 2013509 09-22."
+    gpus:
+      a40: 36
+      a100: 60
+      l40s: 12
+      h100: 16
+      h200: 20                  # current state: 144 GPUs total
+  # --- not yet in service -------------------------------------------------
+  # g001: slurm.conf was changed to a100 on 2026-01-19 but gres.conf still
+  # says Type=a40 and has not been touched since 2024-03-14. Treating g001 as
+  # A40 (gres.conf is authoritative for what Slurm actually allocates) until
+  # the hardware state is confirmed. If it really was upgraded, add:
+  #   - effective: "2026-01-19"
+  #     gpus: {a40: 32, a100: 64, l40s: 12, h100: 16, h200: 20}
+  #
+  # r001-r003: 3x 8-way H200 = +24. DNS records exist (2026-07-27) but the
+  # nodes have placeholder MACs and have not PXE-booted. Add when they enter
+  # service, which takes the cluster to 168 GPUs:
+  #   - effective: "YYYY-MM-DD"
+  #     gpus: {a40: 36, a100: 60, l40s: 12, h100: 16, h200: 44}
 
 # ---------------------------------------------------------------------------
 # Cloud cost-avoidance pricing.

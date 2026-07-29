@@ -51,8 +51,19 @@ sources:
 
   prometheus:
     enabled: true
-    # Prometheus' own API, not the Grafana proxy in front of it.
-    url: null                   # TODO(bennett): confirm the endpoint behind graf.ds.uchicago.edu
+    # Verified live 2026-07-29 (imp-ux6): Prometheus 2.50.1, 1y retention,
+    # Puppet-managed on bare-metal s10 (prometheus::manage_prometheus_server in
+    # puppet-modules hiera; port 9090 opened by role/techstaff_access).
+    #
+    # NOTE: graf.ds.uchicago.edu is NOT Grafana and not a Prometheus proxy — it
+    # is an nginx page on virt02 that JS-redirects to CS-owned
+    # graf.cs.uchicago.edu. Talk to Prometheus directly, as we do here.
+    #
+    # OPEN: s10 is a CS-owned host (128.135.164.216) and the collector runs in
+    # podman on fe0x. The known firewall rule only permits s10 -> fe01:8181,
+    # not the reverse, so reachability from the collector is UNCONFIRMED.
+    # `cli.py doctor` will report this; one curl from a frontend node settles it.
+    url: "http://s10.cs.uchicago.edu:9090"
     step: "5m"
     queries:
       node_up: 'up{job="node"}'
@@ -60,12 +71,23 @@ sources:
       net_tx_bytes: 'rate(node_network_transmit_bytes_total{device!~"lo|veth.*"}[5m])'
       disk_read_bytes: 'rate(node_disk_read_bytes_total[5m])'
       disk_write_bytes: 'rate(node_disk_written_bytes_total[5m])'
-      # Storage node I/O — adjust the job/instance labels to match your Prometheus scrape config.
-      # The node_exporter ZFS collector exposes pool-level counters as
-      # node_zfs_pool_io_read_bytes_total / node_zfs_pool_io_write_bytes_total on some versions;
-      # fall back to node_disk_* filtered by the storage job label if those are absent.
-      storage_read_bytes: 'rate(node_disk_read_bytes_total{job="storage"}[5m])'
-      storage_write_bytes: 'rate(node_disk_written_bytes_total{job="storage"}[5m])'
+      # Storage node I/O.
+      #
+      # These previously filtered on job="storage", which DOES NOT EXIST in this
+      # Prometheus — verified against the live label-values API (imp-ux6), so the
+      # queries silently returned nothing. The storage nodes appear under
+      # job="node" (direct scrape :9100) and job="node_dsi_proxy" (via PushProx
+      # at 128.135.24.43:8080, more reliable behind the DSI network boundary).
+      #
+      # An instance-regex filter is used rather than job="node_dsi_proxy" because
+      # that job also carries compute nodes; matching the hostname is precise.
+      storage_read_bytes: 'rate(node_disk_read_bytes_total{instance=~"cluster-storage[0-9]+\.ds\.uchicago\.edu.*"}[5m])'
+      storage_write_bytes: 'rate(node_disk_written_bytes_total{instance=~"cluster-storage[0-9]+\.ds\.uchicago\.edu.*"}[5m])'
+      # Unverified alternative: node_exporter's ZFS collector may expose
+      # node_zfs_pool_io_read_bytes_total / _write_bytes_total, which are
+      # pool-level rather than block-device-level. Check before switching:
+      #   curl -sG http://s10.cs.uchicago.edu:9090/api/v1/query \
+      #     --data-urlencode 'query=node_zfs_pool_io_read_bytes_total'
 
   dcgm:
     # OFF until the DCGM exporters are deployed. The code path and the site
