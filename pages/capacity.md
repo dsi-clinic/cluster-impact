@@ -44,6 +44,20 @@ What the cluster is made of, and how much data it holds.
   <div id="chart-storage" class="chart"></div>
 </div>
 
+<div class="chart-card">
+  <div class="chart-card__head">
+    <h3 class="chart-card__title">Storage I/O (yesterday)</h3>
+  </div>
+  <p class="chart-card__sub">
+    Total bytes read and written across the shared storage nodes in the
+    most recent complete calendar day, integrated from Prometheus rate
+    series. See the <a href="{{ '/methodology/' | relative_url }}">methodology
+    page</a> for why cumulative counters from <code>zpool iostat</code> are
+    not used.
+  </p>
+  <div id="chart-storage-io" class="chart"></div>
+</div>
+
 <p class="methodology-note">
   Peak PFLOPS is a theoretical ceiling computed from vendor specifications for
   the installed hardware, using dense (non-sparse) tensor-core figures. It is
@@ -56,5 +70,6 @@ What the cluster is made of, and how much data it holds.
     Impact.freshness('#freshness');
     Impact.gpuMix('chart-gpus');
     Impact.storageChart('chart-storage');
+    Impact.storageIo('chart-storage-io');
   });
 </script>

@@ -181,7 +181,8 @@ def cmd_collect(args: argparse.Namespace) -> int:
         },
     )
 
-    storage_doc, storage_warnings = _build_storage(cfg, runner, fixture_mode)
+    prometheus = PrometheusSource(cfg.sources.source("prometheus"))
+    storage_doc, storage_warnings = _build_storage(cfg, runner, fixture_mode, prometheus)
     warnings.extend(storage_warnings)
     publisher.write_doc("storage", storage_doc)
 
@@ -282,13 +283,61 @@ def _build_inventory(cfg: config_module.Config, slurm: SlurmSource) -> tuple[dic
 
 
 def _build_storage(
-    cfg: config_module.Config, runner: Runner, fixture_mode: bool
+    cfg: config_module.Config,
+    runner: Runner,
+    fixture_mode: bool,
+    prometheus: PrometheusSource | None = None,
 ) -> tuple[dict, list[str]]:
     if not cfg.sources.enabled("storage") or fixture_mode:
         return {"available": False, "reason": "disabled"}, []
     source = StorageSource(runner, cfg.sources.source("storage"))
     usages, warnings = source.fetch_capacity(cfg.cluster.filesystems)
-    return StorageSource.to_public(usages), warnings
+    doc = StorageSource.to_public(usages)
+
+    if prometheus is not None and prometheus.configured and cfg.sources.enabled("prometheus"):
+        io_doc, io_warnings = _fetch_storage_io(prometheus, cfg.sources.source("prometheus"))
+        warnings.extend(io_warnings)
+        doc.update(io_doc)
+    else:
+        doc["io_available"] = False
+
+    return doc, warnings
+
+
+def _fetch_storage_io(prometheus: PrometheusSource, prom_settings: dict) -> tuple[dict, list[str]]:
+    """Integrate yesterday's storage read/write rates into total bytes."""
+    warnings: list[str] = []
+    queries = prom_settings.get("queries") or {}
+    read_query = queries.get("storage_read_bytes")
+    write_query = queries.get("storage_write_bytes")
+    if not read_query or not write_query:
+        return {"io_available": False}, [
+            "storage I/O: add prometheus.queries.storage_read_bytes and "
+            "storage_write_bytes to sources.yaml"
+        ]
+
+    today = date.today()
+    window_end = _midnight(today)
+    window_start = _midnight(today - timedelta(days=1))
+
+    read_bytes, warn = prometheus.integral_bytes(read_query, window_start, window_end)
+    if warn:
+        warnings.append(warn)
+
+    write_bytes, warn = prometheus.integral_bytes(write_query, window_start, window_end)
+    if warn:
+        warnings.append(warn)
+
+    if read_bytes is None and write_bytes is None:
+        return {"io_available": False}, warnings
+
+    return {
+        "io_available": True,
+        "io_window_start": (today - timedelta(days=1)).isoformat(),
+        "io_window_end": today.isoformat(),
+        "io_read_bytes": int(read_bytes) if read_bytes is not None else None,
+        "io_write_bytes": int(write_bytes) if write_bytes is not None else None,
+    }, warnings
 
 
 # --------------------------------------------------------------------------

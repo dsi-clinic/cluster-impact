@@ -180,7 +180,10 @@ meaningless deltas.
   Aggregates are committed to git precisely so this horizon stops receding —
   but data purged before this site existed is gone.
 - **Monthly and yearly wait percentiles are approximations** (see above).
-- **Storage I/O volume** is not yet published; only capacity is.
+- **Storage I/O volume** is published as a daily total (read/write bytes)
+  once Prometheus is configured with `prometheus.queries.storage_read_bytes`
+  and `storage_write_bytes` in `sources.yaml`. Until then the chart shows
+  "unavailable".
 - **Publication and grant outcomes** are not tracked here. They are the
   metric that matters most and the one this tooling cannot reach.
 

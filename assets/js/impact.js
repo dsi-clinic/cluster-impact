@@ -133,6 +133,16 @@
     return String(Math.round(value));
   }
 
+  function fmtBytes(value) {
+    if (value === null || value === undefined || isNaN(value)) return '—';
+    var abs = Math.abs(value);
+    if (abs >= 1099511627776) return (value / 1099511627776).toFixed(1) + ' TiB';
+    if (abs >= 1073741824) return (value / 1073741824).toFixed(1) + ' GiB';
+    if (abs >= 1048576) return (value / 1048576).toFixed(1) + ' MiB';
+    if (abs >= 1024) return (value / 1024).toFixed(1) + ' KiB';
+    return String(Math.round(value)) + ' B';
+  }
+
   function fmtDuration(seconds) {
     if (seconds === null || seconds === undefined || isNaN(seconds)) return '—';
     if (seconds < 90) return Math.round(seconds) + 's';
@@ -758,6 +768,42 @@
     });
   }
 
+  function storageIo(id) {
+    load('storage').then(function (storage) {
+      if (!storage || !storage.io_available) {
+        return unavailable(
+          document.getElementById(id),
+          'Storage I/O metrics are not yet collected. Configure prometheus.queries.storage_read_bytes and storage_write_bytes.'
+        );
+      }
+      mount(id, function () {
+        var labels = ['Read', 'Write'];
+        var values = [storage.io_read_bytes, storage.io_write_bytes];
+        var opt = baseOption({
+          exportName: 'storage-io',
+          legend: false
+        });
+        opt.xAxis = categoryAxis(labels);
+        opt.yAxis = valueAxis({
+          name: 'bytes',
+          formatter: function (v) { return fmtBytes(v); }
+        });
+        opt.tooltip.valueFormatter = function (v) { return fmtBytes(v); };
+        opt.series = [
+          {
+            type: 'bar',
+            barMaxWidth: 80,
+            data: [
+              { value: values[0], itemStyle: { color: PALETTE[0] } },
+              { value: values[1], itemStyle: { color: PALETTE[1] } }
+            ]
+          }
+        ];
+        return opt;
+      });
+    });
+  }
+
   function gpuMix(id) {
     load('inventory').then(function (inventory) {
       if (!inventory || !inventory.available) return unavailable(document.getElementById(id));
@@ -961,6 +1007,7 @@
     fmtNumber: fmtNumber,
     fmtPercent: fmtPercent,
     fmtCompact: fmtCompact,
+    fmtBytes: fmtBytes,
     fmtDuration: fmtDuration,
     utilizationTrend: utilizationTrend,
     utilizationRate: utilizationRate,
@@ -974,6 +1021,7 @@
     hourHeatmap: hourHeatmap,
     groupBreakdown: groupBreakdown,
     storageChart: storageChart,
+    storageIo: storageIo,
     gpuMix: gpuMix,
     recordWall: recordWall,
     recordTotals: recordTotals,

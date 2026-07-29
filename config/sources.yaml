@@ -60,6 +60,12 @@ sources:
       net_tx_bytes: 'rate(node_network_transmit_bytes_total{device!~"lo|veth.*"}[5m])'
       disk_read_bytes: 'rate(node_disk_read_bytes_total[5m])'
       disk_write_bytes: 'rate(node_disk_written_bytes_total[5m])'
+      # Storage node I/O — adjust the job/instance labels to match your Prometheus scrape config.
+      # The node_exporter ZFS collector exposes pool-level counters as
+      # node_zfs_pool_io_read_bytes_total / node_zfs_pool_io_write_bytes_total on some versions;
+      # fall back to node_disk_* filtered by the storage job label if those are absent.
+      storage_read_bytes: 'rate(node_disk_read_bytes_total{job="storage"}[5m])'
+      storage_write_bytes: 'rate(node_disk_written_bytes_total{job="storage"}[5m])'
 
   dcgm:
     # OFF until the DCGM exporters are deployed. The code path and the site
