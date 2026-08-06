@@ -101,4 +101,4 @@ sacct --allusers --allocations --noheader --parsable2 -X \
   | grep -vE '^(None|Unknown|)$' | sort | head -1 || echo '(query failed)'
 
 hr "done"
-echo "Paste this back with:  bead-answer imp-aey \"<paste>\""
+echo "Save this output; it answers the open questions in docs/OPEN-WORK.md."

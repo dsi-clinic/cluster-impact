@@ -49,7 +49,9 @@ Remaining human steps are unchanged: build image, generate the ed25519 deploy ke
 **What was already worked out**
 
 ```
-Returned to pool by gastown.nux: bead is tagged human-only. Production host setup (prerequisite) not yet complete. Escalated to witness (ci-wisp-jiv9bu). Requires human to run podman backfill on cluster and manually review/push the git diff.
+Human-only. Production host setup (prerequisite) not yet complete. Requires a
+human to run the podman backfill on the cluster and manually review/push the
+resulting git diff.
 ```
 
 **Done when:** Historical daily aggregates committed to git back to the earliest date retained by slurmdbd. data/health.json shows the actual date range. The first automated nightly run picks up from the most recent committed date.
@@ -86,9 +88,6 @@ Prometheus half of the collector needs rerouting or dropping from v1.
 Second command: a non-empty 'result' array means the ZFS collector is enabled
 and we can use pool-level I/O counters instead of the block-device regex now in
 config/sources.yaml.
-
-Paste both outputs back with:  bead-answer imp-aey "<the output>"
-That releases the bead so an agent applies the config change.
 ```
 
 **Done when:** Yes/no on reachability from the collector host, plus a decision on the fallback if no.
