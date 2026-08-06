@@ -31,7 +31,12 @@ sources:
     # CANCELLED, NODE_FAIL, PREEMPTED.
 
   storage:
-    enabled: true
+    # DISABLED 2026-08-06: `ssh root@builder.cs.uchicago.edu` is refused
+    # (Permission denied (publickey,password)) from both a laptop and fe01, so
+    # the zfs hop below cannot run and every dataset degrades to unavailable.
+    # Left configured, not deleted — flip back to true once the collector runs
+    # somewhere holding a key that builder accepts for root.
+    enabled: false
     # Root on the storage nodes is reachable from builder, not from fe0x
     # (permitted_root_nets). Set ssh_via to the jump host accordingly.
     ssh_via: "builder.cs.uchicago.edu"
@@ -85,7 +90,14 @@ sources:
     # variable to quietly fill in.
 
   prometheus:
-    enabled: true
+    # DISABLED 2026-08-06 — this answers imp-aey, and the answer is NO.
+    # `curl http://s10.cs.uchicago.edu:9090/-/ready` times out from BOTH a
+    # laptop and fe01, confirming the firewall permits only s10 -> fe01:8181 and
+    # not the reverse. Everything Prometheus-derived (node availability, storage
+    # I/O throughput) is therefore unavailable until the reverse path is opened
+    # in Puppet by CS techstaff, or the collector proxies through a DSI host.
+    # The endpoint below is correct and verified; only reachability is missing.
+    enabled: false
     # Verified live 2026-07-29 (imp-ux6): Prometheus 2.50.1, 1y retention,
     # Puppet-managed on bare-metal s10 (prometheus::manage_prometheus_server in
     # puppet-modules hiera; port 9090 opened by role/techstaff_access).

@@ -232,7 +232,18 @@ capacity_timeline:
       a100: 60
       l40s: 12
       h100: 16
-      h200: 20                  # current state: 140 GPUs total
+      h200: 20                  # 140 GPUs total
+  - effective: "2026-08-05"
+    note: >-
+      r001-r003 (3x 8-way H200) enter service. Measured from the running
+      controller 2026-08-06: first jobs landed on r001/r002/r003 at
+      13:42/13:43/13:44 on 2026-08-05. Cluster goes to 164 GPUs.
+    gpus:
+      a40: 32
+      a100: 60
+      l40s: 12
+      h100: 16
+      h200: 44                  # current state: 164 GPUs total
   # --- not yet in service -------------------------------------------------
   # g001: RESOLVED as absent — see the 2026-07-29 entry above. The running
   # controller does not know the node, so it contributes nothing. Do NOT add it
@@ -243,13 +254,12 @@ capacity_timeline:
   #   - effective: "YYYY-MM-DD"      # a100 case
   #     gpus: {a40: 32, a100: 64, l40s: 12, h100: 16, h200: 20}
   #
-  # r001-r003: 3x 8-way H200 = +24. DNS records exist (2026-07-27) but the
-  # nodes have placeholder MACs and have not PXE-booted. Add when they enter
-  # service, which takes the cluster to 164 GPUs (NOT 168 — that figure assumed
-  # the phantom g001 A40s). Note these H200s' form factor is UNKNOWN and must be
-  # measured like the rest; do not assume SXM:
-  #   - effective: "YYYY-MM-DD"
-  #     gpus: {a40: 32, a100: 60, l40s: 12, h100: 16, h200: 44}
+  # r001-r003: RESOLVED — in service since 2026-08-05, see the entry above.
+  # sinfo now reports gpu:h200:8 on each, and the cluster totals 164 GPUs, which
+  # is the figure this comment predicted (NOT 168 — that assumed the phantom
+  # g001 A40s). Their form factor is still UNMEASURED; both mixed-variant keys
+  # carry the conservative NVL rate, so peak PFLOPS understates rather than
+  # overstates until imp-gpx lands per-variant counts.
 
 # ---------------------------------------------------------------------------
 # Cloud cost-avoidance pricing.

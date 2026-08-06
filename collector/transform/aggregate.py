@@ -8,10 +8,24 @@ is an INTERNAL type and must never be serialized to the repo directly —
 from __future__ import annotations
 
 import math
+import re
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 
 from ..sources.slurm import JobRecord, UtilizationReport
+
+# Partition and QOS come from Slurm as free-form strings and become keys in a
+# published token_map, which `privacy.SAFE_TOKEN` requires to be free of commas
+# and spaces. A job submitted with `-p clab,general` records the whole request
+# list, so the raw value would trip the gate and abort the run. Normalising here
+# keeps the value legible rather than discarding the breakdown.
+_UNSAFE_KEY_CHAR = re.compile(r"[^A-Za-z0-9_.:+/-]")
+
+
+def safe_key(value: str) -> str:
+    cleaned = _UNSAFE_KEY_CHAR.sub("+", (value or "").strip())
+    return cleaned[:64] or "unknown"
+
 
 # GPUs requested by a single job. Chosen to distinguish the three things
 # stakeholders actually ask about: laptop-replacement work, single-node
@@ -171,8 +185,8 @@ def aggregate_days(
         for d, gpu_seconds in gpu_by_day.items():
             agg = day_for(d)
             agg.gpu_seconds_allocated += gpu_seconds
-            _bump(agg.gpu_seconds_by_partition, job.partition or "unknown", gpu_seconds)
-            _bump(agg.gpu_seconds_by_qos, job.qos or "unknown", gpu_seconds)
+            _bump(agg.gpu_seconds_by_partition, safe_key(job.partition), gpu_seconds)
+            _bump(agg.gpu_seconds_by_qos, safe_key(job.qos), gpu_seconds)
 
             if job.gpu_models:
                 # Split proportionally when a job holds more than one model.

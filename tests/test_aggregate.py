@@ -10,9 +10,11 @@ from collector.transform.aggregate import (
     aggregate_days,
     fallback_denominator,
     percentile,
+    safe_key,
     size_bucket,
 )
 from collector.transform.derive import build_rollup, estimate_cost_avoided
+from collector.transform.privacy import SAFE_TOKEN
 
 CONFIG_DIR = Path(__file__).parent / "config"
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -212,3 +214,25 @@ def test_rollup_users_uses_max_not_sum(cfg):
     group = rollup["periods"][0]["groups"][0]
     assert group["gpu_hours"] == 20.0  # summed
     assert group["users"] == 3  # NOT 6
+
+
+# A job submitted with `-p clab,general` keeps the whole request list in the
+# Partition field. That string becomes a key in a published token_map, and
+# privacy.SAFE_TOKEN rejects commas — so an unnormalised value would fail the
+# gate and abort a collection run partway through.
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        ("clab,general", "clab+general"),
+        ("ai+s,general", "ai+s+general"),
+        ("general", "general"),
+        ("complementary-ai", "complementary-ai"),
+        ("DDRI", "DDRI"),
+        ("", "unknown"),
+        ("   ", "unknown"),
+        ("weird name", "weird+name"),
+    ],
+)
+def test_safe_key_survives_the_privacy_gate(raw, expected):
+    assert safe_key(raw) == expected
+    assert SAFE_TOKEN.match(safe_key(raw))
