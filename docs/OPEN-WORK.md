@@ -13,6 +13,63 @@ Most of what remains needs a shell on the cluster. `deploy/gather-facts.sh`
 collects the facts for several of these in one read-only pass.
 
 
+## TODO: restore per-model GPU attribution, then cost avoidance
+
+*added 2026-08-06, after the first live collection run*
+
+**The problem**
+
+Slurm's accounting on this cluster records `gres/gpu` but no typed variants:
+
+```
+AccountingStorageTRES = cpu,mem,energy,node,billing,fs/disk,vmem,pages,
+                        gres/gpu,gres/gpumem,gres/gpuutil
+```
+
+Measured: **zero** typed `gres/gpu:<model>` entries in all of July 2026, in
+either `AllocTRES` or `ReqTRES`. Users genuinely do request specific models and
+slurmctld honours it at schedule time — the job lands on the right node — but the
+type is never persisted, so accounting cannot tell an A40 hour from an H200 hour.
+
+Two consequences on the site today:
+
+- `gpu_hours_by_model` is a single `unspecified` bucket, so the per-model chart
+  carries no information.
+- Cost avoidance is **withheld**. It joins per-model hours against per-model
+  prices; with nothing priceable it would have published `$0` as the headline
+  "Cloud cost avoided" tile, which reads as "this cluster saved nothing".
+  `estimate_cost_avoided()` now returns `None` in that case instead.
+
+**Two fixes, and they are independent**
+
+1. *Fix it going forward (needs techstaff).* Add the typed TRES to
+   `AccountingStorageTRES`:
+   `gres/gpu:a40,gres/gpu:a100,gres/gpu:l40s,gres/gpu:h100,gres/gpu:h200`.
+   Only affects jobs recorded **after** the change; it cannot recover history.
+   Confirm whether this needs a slurmdbd restart and whether adding TRES mid-life
+   is safe on 24.11.7 before proposing it.
+
+2. *Recover history from node names (no Slurm change needed).* `sacct` still
+   records `NodeList`, and node → GPU model is known from `sinfo`/`gres.conf`
+   and already reconstructed in `config/cluster.yaml`. Attributing each job's
+   GPU-hours via the nodes it ran on would rebuild the per-model breakdown for
+   the entire 2023-05 → present history. This is the higher-value fix and is
+   entirely inside this repo. Caveats to handle: a job spanning nodes of
+   different models needs proportional splitting, and `NodeList` is currently
+   never collected — adding it means editing `SACCT_FIELDS` and re-checking
+   `privacy.py`, since node names must NOT be published (they are only an
+   intermediate for attribution).
+
+A blended-rate estimate (weighting prices by the installed mix) was considered
+as a shortcut and rejected for now: allocation is not proportional to
+installation, so it is an estimate rather than a bound and is harder to defend
+on a public page than simply withholding. Revisit only if fix 2 proves
+impractical.
+
+**Done when:** `gpu_hours_by_model` shows real models across the full history and
+`/value/` publishes a cost-avoidance figure again, sourced and defensible.
+
+
 ## Deploy collector to a production cluster host
 
 *was `imp-xe0` · labels: deploy,human-only,infrastructure*

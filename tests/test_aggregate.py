@@ -236,3 +236,14 @@ def test_rollup_users_uses_max_not_sum(cfg):
 def test_safe_key_survives_the_privacy_gate(raw, expected):
     assert safe_key(raw) == expected
     assert SAFE_TOKEN.match(safe_key(raw))
+
+
+def test_unpriceable_hours_are_withheld_not_published_as_zero(cfg):
+    # This cluster's AccountingStorageTRES omits typed gres, so real GPU-hours
+    # arrive keyed "unspecified". $0 would read as "saved nothing"; withhold.
+    assert estimate_cost_avoided({"unspecified": 50_000.0}, cfg.cluster) is None
+    # A partially-priced mix still publishes, counting only what it can price.
+    mixed = estimate_cost_avoided({"a100": 100.0, "unspecified": 100.0}, cfg.cluster)
+    assert mixed == pytest.approx(220.0)
+    # Genuinely no usage is a real zero, not a withholding.
+    assert estimate_cost_avoided({}, cfg.cluster) == 0.0

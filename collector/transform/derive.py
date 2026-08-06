@@ -309,10 +309,23 @@ def estimate_cost_avoided(
         return None
     prices = cluster.priced_models()
     total = 0.0
+    priced_hours = 0.0
+    unpriced_hours = 0.0
     for model, hours in gpu_hours_by_model.items():
         rate = prices.get(model)
         if rate:
             total += hours * rate
+            priced_hours += hours
+        else:
+            unpriced_hours += hours
+
+    # This cluster's AccountingStorageTRES lists `gres/gpu` but no typed
+    # variants, so every GPU-hour arrives keyed "unspecified" and none of it can
+    # be priced. Falling through would publish $0 as a headline figure, which
+    # reads as "this cluster saved nothing" rather than "we cannot price it".
+    # Withhold instead, exactly as an unsourced price table is withheld.
+    if priced_hours <= 0 and unpriced_hours > 0:
+        return None
     return round(total, 2)
 
 
