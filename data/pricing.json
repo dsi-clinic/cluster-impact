@@ -1,0 +1,16 @@
+{
+  "available": true,
+  "reason": null,
+  "currency": "USD",
+  "basis": "on-demand, single-GPU instance, US region, list price (no committed-use or spot discount)",
+  "source": "https://www.coreweave.com/pricing/classic",
+  "asof": "2026-07-29",
+  "usd_per_gpu_hour": {
+    "a40": 1.28,
+    "a100": 2.21,
+    "l40s": 2.25,
+    "h100": 4.25,
+    "h200": 6.31
+  },
+  "generated": "2026-08-06T16:21:53-05:00"
+}

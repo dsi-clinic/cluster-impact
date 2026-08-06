@@ -1,0 +1,17 @@
+{
+  "available": true,
+  "nodes_total": 32,
+  "nodes_online": 31,
+  "gpus_total": 164,
+  "gpus_online": 160,
+  "gpus_by_model": {
+    "a100": 60,
+    "h200": 44,
+    "a40": 32,
+    "h100": 16,
+    "l40s": 12
+  },
+  "cpus_total": 3296,
+  "peak_pflops_fp16": 78.0,
+  "generated": "2026-08-06T16:21:52-05:00"
+}
